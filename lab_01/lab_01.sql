@@ -37,4 +37,5 @@ WHERE customer_id IN (
 
 -- Проверка
 SELECT customer_id, first_name, last_name, email, status
+
 FROM vip_clients;
