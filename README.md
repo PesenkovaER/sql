@@ -65,6 +65,7 @@
 Вывести все продажи (модель, цена), совершенные через интернет (`channel = 'internet'`).
 
 <img width="628" height="611" alt="image" src="https://github.com/user-attachments/assets/6c2c08b3-272f-4000-8ddb-46fee59145e9" />
+
 Скриншот выполнения SELECT (JOIN, основная БД)
 
 ---
@@ -73,6 +74,7 @@
 Объединить (UNION ALL) список `dealership_id` из таблицы `sales` и из таблицы `dealerships`.
 
 <img width="381" height="608" alt="image" src="https://github.com/user-attachments/assets/dcdad147-f793-4c96-9119-de2636105dac" />
+
 Скриншот выполнения SELECT (UNION ALL, основная БД)
 
 ---
@@ -84,6 +86,7 @@
 - `> 10000` — `'Large'`
 
 <img width="472" height="790" alt="image" src="https://github.com/user-attachments/assets/9ddb3e72-ae5a-403a-aa25-438559122b63" />
+
 Скриншот выполнения SELECT (CASE, основная БД)
 
 ---
