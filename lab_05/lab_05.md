@@ -25,7 +25,7 @@
 ## Задание 1
 Найти товары (products) с базовой ценой base_msrp = 599.99.
 
-https://github.com/user-attachments/assets/7c324cdd-9879-4d4d-8f06-45ce59752870
+<img width="723" alt="Задание 1" src="exp1.png">
 
 Результат запроса EXPLAIN ANALYZE
 
