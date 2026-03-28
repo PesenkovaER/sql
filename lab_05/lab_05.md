@@ -25,9 +25,9 @@
 ## Задание 1
 Найти товары (products) с базовой ценой base_msrp = 599.99.
 
+<img width="867" height="434" alt="image" src="https://github.com/user-attachments/assets/6b86fda0-a936-46e9-b21e-28b891899ce9" />
 
-
-[Результат запроса EXPLAIN ANALYZE](exp1.png)
+Результат запроса EXPLAIN ANALYZE
 
 **Результат анализа:**
 - **Метод сканирования:** Sequential Scan (последовательное сканирование)
@@ -40,8 +40,9 @@
 ## Задание 2
 Создать индекс B-Tree для поля base_msrp и выполнить повторный анализ запроса.
 
+<img width="802" height="351" alt="image" src="https://github.com/user-attachments/assets/8ae7c551-13bd-4b60-be5c-a65f91cf9772" />
 
-[Результат запроса EXPLAIN ANALYZE](exp2.png)
+Результат запроса EXPLAIN ANALYZE
 
 **Результат анализа после создания индекса:**
 - **Метод сканирования:** Sequential Scan (последовательное сканирование)
@@ -54,8 +55,9 @@
 ## Задание 3
 Оптимизировать поиск продаж для конкретного дилера (dealership_id = 5) в таблице sales.
 
+<img width="820" height="351" alt="image" src="https://github.com/user-attachments/assets/1f9ebdb9-09b8-457c-a455-8864342bc556" />
 
-[Результат запроса EXPLAIN ANALYZE до создания индекса](exp3.png)
+Результат запроса EXPLAIN ANALYZE до создания индекса
 
 **Метод сканирования:** Sequential Scan (последовательное сканирование)
 
@@ -67,7 +69,9 @@
 
 **Вывод:** PostgreSQL читает всю таблицу целиком и применяет фильтр к каждой строке, что занимает значительное время.
 
-[Результат запроса EXPLAIN ANALYZE после создания индекса](exp4.png)
+<img width="957" height="469" alt="image" src="https://github.com/user-attachments/assets/f4c8321c-b8ab-416a-9139-c27a8ffb2054" />
+
+Результат запроса EXPLAIN ANALYZE после создания индекса
 
 **Метод сканирования:** Bitmap Index Scan + Bitmap Heap Scan — индекс активно используется
 
