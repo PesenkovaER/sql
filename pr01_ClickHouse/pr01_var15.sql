@@ -60,6 +60,7 @@ SELECT
     )) AS ip_address
 FROM numbers(150);
 
+select * from sales_var15;
 -- =====================================================
 -- Задание 2. Аналитические запросы
 -- =====================================================
@@ -90,21 +91,19 @@ FROM sales_var15
 GROUP BY month
 ORDER BY month;
 
--- 2.4 Фильтрация по партиции (октябрь 2024)
+-- 2.4 Фильтрация по партиции (ноябрь 2024)
 SELECT *
 FROM sales_var15
-WHERE sale_timestamp >= '2024-10-01' AND sale_timestamp < '2024-11-01';
+WHERE sale_timestamp >= '2024-11-01' AND sale_timestamp < '2024-12-01';
 
 -- Проверка через EXPLAIN, что используется только партиция 202410
 EXPLAIN SELECT *
 FROM sales_var15
-WHERE sale_timestamp >= '2024-10-01' AND sale_timestamp < '2024-11-01';
+WHERE sale_timestamp >= '2024-11-01' AND sale_timestamp < '2024-12-01';
 
 -- =====================================================
 -- Задание 3. ReplacingMergeTree — справочник товаров
 -- =====================================================
-
-DROP TABLE IF EXISTS products_var15;
 
 CREATE TABLE products_var15 (
     product_id    UInt32,
@@ -155,8 +154,6 @@ SELECT * FROM products_var15 FINAL;
 -- Задание 4. SummingMergeTree — агрегация метрик
 -- =====================================================
 
-DROP TABLE IF EXISTS daily_metrics_var15;
-
 CREATE TABLE daily_metrics_var15 (
     metric_date    Date,
     campaign_id    UInt32,
@@ -175,31 +172,31 @@ ORDER BY (metric_date, campaign_id, channel);
 -- campaign_id начинается с: NNN × 10 + 1 = 151
 
 -- 4.1 Вставляем данные за 3 дня для 2 кампаний, по 2 канала каждая (3*2*2 = 12 строк)
-INSERT INTO daily_metrics_var15
-SELECT
-    toDate('2024-10-01') + INTERVAL (number % 3) DAY AS metric_date,
-    151 + (number % 2) AS campaign_id,
-    CASE (number % 2) WHEN 0 THEN 'Email' ELSE 'Social' END AS channel,
-    1000 + (number % 5000) AS impressions,
-    50 + (number % 300) AS clicks,
-    1 + (number % 20) AS conversions,
-    5000 + (number % 10000) AS spend_cents
-FROM numbers(12);
+INSERT INTO daily_metrics_var15 (metric_date, campaign_id, channel, impressions, clicks, conversions, spend_cents) VALUES
+('2024-10-01', 151, 'Email', 10000, 500, 50, 500000),
+('2024-10-01', 151, 'Social', 15000, 750, 75, 750000),
+('2024-10-01', 152, 'Email', 8000, 400, 40, 400000),
+('2024-10-01', 152, 'Social', 12000, 600, 60, 600000),
+('2024-10-02', 151, 'Email', 11000, 550, 55, 550000),
+('2024-10-02', 151, 'Social', 16000, 800, 80, 800000),
+('2024-10-02', 152, 'Email', 8500, 425, 42, 425000),
+('2024-10-02', 152, 'Social', 13000, 650, 65, 650000),
+('2024-10-03', 151, 'Email', 12000, 600, 60, 600000),
+('2024-10-03', 151, 'Social', 17000, 850, 85, 850000),
+('2024-10-03', 152, 'Email', 9000, 450, 45, 450000),
+('2024-10-03', 152, 'Social', 14000, 700, 70, 700000);
 
 -- 4.2 Вставляем повторные строки с теми же ключами (для проверки суммирования)
-INSERT INTO daily_metrics_var15
-SELECT
-    toDate('2024-10-01') + INTERVAL (number % 3) DAY AS metric_date,
-    151 + (number % 2) AS campaign_id,
-    CASE (number % 2) WHEN 0 THEN 'Email' ELSE 'Social' END AS channel,
-    500 + (number % 1000) AS impressions,
-    10 + (number % 100) AS clicks,
-    1 + (number % 10) AS conversions,
-    1000 + (number % 5000) AS spend_cents
-FROM numbers(6);
+INSERT INTO daily_metrics_var15 (metric_date, campaign_id, channel, impressions, clicks, conversions, spend_cents) VALUES
+('2024-10-01', 151, 'Email', 1000, 50, 5, 50000),
+('2024-10-01', 151, 'Social', 2000, 100, 10, 100000),
+('2024-10-02', 152, 'Email', 800, 40, 4, 40000),
+('2024-10-03', 151, 'Social', 1500, 75, 7, 75000),
+('2024-10-03', 152, 'Email', 500, 25, 2, 25000),
+('2024-10-03', 152, 'Social', 2000, 100, 10, 100000);
 
 -- 4.3 Проверяем данные до оптимизации
-SELECT COUNT(*) AS total_rows FROM daily_metrics_var15;
+SELECT * FROM daily_metrics_var15;
 
 -- 4.4 Выполняем OPTIMIZE для принудительного суммирования
 OPTIMIZE TABLE daily_metrics_var15 FINAL;
@@ -215,6 +212,7 @@ SELECT
     spend_cents
 FROM daily_metrics_var15
 ORDER BY metric_date, campaign_id, channel;
+
 
 -- 4.6 CTR (Click-Through Rate) по каналам
 SELECT
@@ -236,7 +234,7 @@ SELECT
     sum(rows) AS total_rows,
     formatReadableSize(sum(bytes_on_disk)) AS size
 FROM system.parts
-WHERE database = 'db_var15'
+WHERE database = 'db_15'
   AND table = 'sales_var15'
   AND active
 GROUP BY partition
@@ -260,7 +258,6 @@ DESCRIBE TABLE products_var15;
 DESCRIBE TABLE daily_metrics_var15;
 
 -- 5.4 Запрос с массивом
-DROP TABLE IF EXISTS tags_var15;
 
 CREATE TABLE tags_var15 (
     item_id  UInt32,
@@ -286,7 +283,7 @@ SELECT
     'sales' AS tbl, 
     count() AS rows, 
     sum(quantity) AS check_sum 
-FROM db_var15.sales_var15
+FROM db_15.sales_var15
 
 UNION ALL
 
@@ -294,7 +291,7 @@ SELECT
     'products', 
     count(), 
     sum(toUInt64(product_id)) 
-FROM db_var15.products_var15 FINAL
+FROM db_15.products_var15 FINAL
 
 UNION ALL
 
@@ -302,4 +299,4 @@ SELECT
     'metrics', 
     count(), 
     sum(clicks) 
-FROM daily_metrics_var15;
+FROM db_15.daily_metrics_var15;
