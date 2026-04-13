@@ -111,7 +111,8 @@ ORDER BY month;
 ```
 <img width="391" height="134" alt="image" src="https://github.com/user-attachments/assets/d255da37-124b-4882-96af-d4129c09401b" />
 
-* Фильтрация по партиции
+Фильтрация по партиции
+-
 ```sql
 SELECT *
 FROM sales_var15
