@@ -125,7 +125,7 @@ WHERE sale_timestamp >= '2024-11-01' AND sale_timestamp < '2024-12-01';
 ```
 <img width="1775" height="732" alt="image" src="https://github.com/user-attachments/assets/d217df4c-663f-498b-8dc6-9cb1f92f87ee" />
 
-<img width="518" height="139" alt="image" src="https://github.com/user-attachments/assets/c6b179a3-8555-4fa3-982d-9d04e7e80750" />
+<img width="679" height="141" alt="image" src="https://github.com/user-attachments/assets/a8dc917f-12d5-4f1d-8335-67eff2f515af" />
 
 ---
 ## Задание 3. ReplacingMergeTree — справочник товаров
@@ -181,6 +181,7 @@ SELECT * FROM products_var15;
 ```
 <img width="1480" height="440" alt="image" src="https://github.com/user-attachments/assets/049eae56-ada7-48e5-9b39-6d8f139a54bf" />
 
+----
 ### 3.4
 ```sql
 -- 3.4 Принудительное слияние
