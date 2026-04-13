@@ -75,6 +75,7 @@ select * from sales_var15;
 
 <img width="1763" height="736" alt="image" src="https://github.com/user-attachments/assets/312b0c48-af4d-47cc-a8b8-15bd5f08238a" />
 
+---
 ## Задание 2. Аналитические запросы
 **Общая выручка по категориям**
 ```sql
@@ -135,7 +136,7 @@ WHERE sale_timestamp >= '2024-11-01' AND sale_timestamp < '2024-12-01';
 5. Повторите SELECT — убедитесь, что осталась только версия 2.
 6. Покажите результаты запроса SELECT * FROM products_varNNN FINAL (альтернатива OPTIMIZE).
 
-*3.1*
+### 3.1
 ```sql
 -- Создаем таблицу products_var15
 CREATE TABLE products_var15 (
@@ -165,7 +166,7 @@ INSERT INTO products_var15 VALUES
 (158, 'Milk', 'Food', 'FreshCo', 1.99, 1.0, 1, now(), 1),
 (159, 'Cat Toy', 'Pets', 'PetShop', 9.99, 0.1, 1, now(), 1);
 ```
-*3.2*
+### 3.2
 ```sql
 -- 3.2 Для 3 товаров вставляем обновлённые записи с version = 2
 INSERT INTO products_var15 VALUES
@@ -173,26 +174,26 @@ INSERT INTO products_var15 VALUES
 (151, 'Smartphone X Plus', 'Electronics', 'TechCorp', 649.99, 0.18, 1, now(), 2),
 (156, 'Laptop Ultra', 'Electronics', 'TechCorp', 899.99, 2.2, 1, now(), 2);
 ```
-*3.3*
+### 3.3
 ```sql
 -- 3.3 Проверяем — видны обе версии
 SELECT * FROM products_var15;
 ```
 <img width="1480" height="440" alt="image" src="https://github.com/user-attachments/assets/049eae56-ada7-48e5-9b39-6d8f139a54bf" />
 
-*3.4*
+### 3.4
 ```sql
 -- 3.4 Принудительное слияние
 OPTIMIZE TABLE products_var15 FINAL;
 ```
-*3.5*
+### 3.5
 ```sql
 -- 3.5 Проверяем — осталась только версия 2
 SELECT * FROM products_var15;
 ```
 <img width="1493" height="356" alt="image" src="https://github.com/user-attachments/assets/3e39fbff-b16e-4a78-b609-6afbfa538a98" />
 
-*3.6*
+### 3.6
 ```sql
 -- 3.6 Альтернатива OPTIMIZE — используем FINAL
 SELECT * FROM products_var15 FINAL;
@@ -294,33 +295,105 @@ GROUP BY channel;
 <img width="707" height="106" alt="image" src="https://github.com/user-attachments/assets/c12e0c92-187a-4075-b131-8a2b5f81195f" />
 
 ---
-
-*5.2*
+## Задание 5. Комплексный анализ и самопроверка
 ```sql
+-- 5.1 Проверка партиций таблицы sales_var15
+SELECT
+    partition,
+    count() AS parts,
+    sum(rows) AS total_rows,
+    formatReadableSize(sum(bytes_on_disk)) AS size
+FROM system.parts
+WHERE database = 'db_15'
+  AND table = 'sales_var15'
+  AND active
+GROUP BY partition
+ORDER BY partition;
+```
+**Результат: Запрос не выполнен из-за отсутствия прав на чтение системной таблицы *system.parts*.**
 
+### 5.2
+```sql
+-- 5.2 JOIN между таблицами — топ-5 товаров по выручке
+SELECT
+    p.product_name,
+    p.category,
+    round(sum(s.quantity * s.unit_price * (1 - s.discount_pct)), 2) AS revenue
+FROM sales_var15 AS s
+INNER JOIN products_var15 AS p
+    ON s.product_id = p.product_id
+GROUP BY p.product_name, p.category
+ORDER BY revenue DESC
+LIMIT 5;
 ```
 <img width="602" height="200" alt="image" src="https://github.com/user-attachments/assets/ff83021b-9ff6-43fe-a650-c6d144241256" />
 
-5.3 типы данных
+### 5.3 Типы данных всех трёх таблиц
 ```sql
-
+DESCRIBE TABLE sales_var15;
 ```
 <img width="321" height="378" alt="image" src="https://github.com/user-attachments/assets/cd2d5d1e-7773-4890-a3ec-4dad52847cb6" />
 
+```sql
+DESCRIBE TABLE products_var15;
+```
 <img width="323" height="313" alt="image" src="https://github.com/user-attachments/assets/1603c7c5-69ac-4c4c-9919-5c63b1696f5d" />
 
+```sql
+DESCRIBE TABLE daily_metrics_var15;
+```
 <img width="337" height="264" alt="image" src="https://github.com/user-attachments/assets/7c810339-4d6d-432c-afd5-24ba44a5672f" />
 
-5.4
+### 5.4
 ```sql
+-- 5.4 Запрос с массивом
 
+CREATE TABLE tags_var15 (
+    item_id  UInt32,
+    item_name String,
+    tags     Array(String)
+) ENGINE = MergeTree()
+ORDER BY item_id;
+
+INSERT INTO tags_var15 VALUES
+(1, 'Item A', ['sale', 'popular', 'new']),
+(2, 'Item B', ['premium', 'limited']),
+(3, 'Item C', ['sale', 'clearance']);
+
+SELECT
+    arrayJoin(tags) AS tag,
+    count() AS items_count
+FROM tags_var15
+GROUP BY tag
+ORDER BY items_count DESC;
 ```
 <img width="368" height="235" alt="image" src="https://github.com/user-attachments/assets/95edaa29-c013-403e-bd02-a7cf418d173b" />
 
 
-5.5
+### 5.5
 ```sql
+-- 5.5 Контрольная сумма
+SELECT
+    'sales' AS tbl, 
+    count() AS rows, 
+    sum(quantity) AS check_sum 
+FROM db_15.sales_var15
 
+UNION ALL
+
+SELECT
+    'products', 
+    count(), 
+    sum(toUInt64(product_id)) 
+FROM db_15.products_var15 FINAL
+
+UNION ALL
+
+SELECT
+    'metrics', 
+    count(), 
+    sum(clicks) 
+FROM db_15.daily_metrics_var15;
 ```
 <img width="522" height="139" alt="image" src="https://github.com/user-attachments/assets/d9a55e39-49ab-448d-9c69-8ab6b96bce06" />
 
