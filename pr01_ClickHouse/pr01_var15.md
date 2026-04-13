@@ -126,17 +126,78 @@ WHERE sale_timestamp >= '2024-11-01' AND sale_timestamp < '2024-12-01';
 
 <img width="518" height="139" alt="image" src="https://github.com/user-attachments/assets/c6b179a3-8555-4fa3-982d-9d04e7e80750" />
 
+--
+## Задание 3. ReplacingMergeTree — справочник товаров
+1. Вставьте (NNN % 10 + 5) товаров (для варианта 42: 5 + 2 = 7 товаров) с version = 1.
+2. Для 3 товаров вставьте обновлённые записи с version = 2 (измените base_price и is_available).
+3. Выполните SELECT * FROM products_varNNN — убедитесь, что видны обе версии.
+4. Выполните OPTIMIZE TABLE products_varNNN FINAL.
+5. Повторите SELECT — убедитесь, что осталась только версия 2.
+6. Покажите результаты запроса SELECT * FROM products_varNNN FINAL (альтернатива OPTIMIZE).
+
+*3.1*
 ```sql
+-- Создаем таблицу products_var15
+CREATE TABLE products_var15 (
+    product_id    UInt32,
+    product_name  String,
+    category      LowCardinality(String),
+    supplier      String,
+    base_price    Decimal64(2),
+    weight_kg     Float32,
+    is_available  UInt8,
+    updated_at    DateTime,
+    version       UInt64
+)
+ENGINE = ReplacingMergeTree(version)
+ORDER BY (product_id);
 
+-- 3.1 Вставляем 10 товаров (NNN % 10 + 5 = 15 % 10 + 5 = 10) с version = 1
+INSERT INTO products_var15 VALUES
+(150, 'Notebook Pro', 'Office', 'TechCorp', 499.99, 1.5, 1, now(), 1),
+(151, 'Smartphone X', 'Electronics', 'TechCorp', 699.99, 0.18, 1, now(), 1),
+(152, 'T-Shirt', 'Clothing', 'FashionInc', 19.99, 0.15, 1, now(), 1),
+(153, 'Apple', 'Food', 'FreshCo', 2.99, 0.15, 1, now(), 1),
+(154, 'Dog Food', 'Pets', 'PetShop', 29.99, 2.5, 1, now(), 1),
+(155, 'Desk Lamp', 'Office', 'HomeGoods', 34.99, 0.8, 1, now(), 1),
+(156, 'Laptop', 'Electronics', 'TechCorp', 999.99, 2.2, 1, now(), 1),
+(157, 'Jeans', 'Clothing', 'FashionInc', 49.99, 0.6, 1, now(), 1),
+(158, 'Milk', 'Food', 'FreshCo', 1.99, 1.0, 1, now(), 1),
+(159, 'Cat Toy', 'Pets', 'PetShop', 9.99, 0.1, 1, now(), 1);
 ```
-
+*3.2*
+```sql
+-- 3.2 Для 3 товаров вставляем обновлённые записи с version = 2
+INSERT INTO products_var15 VALUES
+(150, 'Notebook Pro Max', 'Office', 'TechCorp', 449.99, 1.5, 0, now(), 2),
+(151, 'Smartphone X Plus', 'Electronics', 'TechCorp', 649.99, 0.18, 1, now(), 2),
+(156, 'Laptop Ultra', 'Electronics', 'TechCorp', 899.99, 2.2, 1, now(), 2);
+```
+*3.3*
+```sql
+-- 3.3 Проверяем — видны обе версии
+SELECT * FROM products_var15;
+```
 <img width="1480" height="440" alt="image" src="https://github.com/user-attachments/assets/049eae56-ada7-48e5-9b39-6d8f139a54bf" />
 
+*3.4*
+```sql
+-- 3.4 Принудительное слияние
+OPTIMIZE TABLE products_var15 FINAL;
+```
+*3.5*
+```sql
+-- 3.5 Проверяем — осталась только версия 2
+SELECT * FROM products_var15;
+```
 <img width="1493" height="356" alt="image" src="https://github.com/user-attachments/assets/3e39fbff-b16e-4a78-b609-6afbfa538a98" />
 
 ```sql
-
+-- 3.6 Альтернатива OPTIMIZE — используем FINAL
+SELECT * FROM products_var15 FINAL;
 ```
+<img width="1484" height="353" alt="image" src="https://github.com/user-attachments/assets/7dceb21f-d6c7-4a35-948b-b229f5a1b940" />
+
 
 <img width="1185" height="403" alt="image" src="https://github.com/user-attachments/assets/d463a7c0-23de-49af-8518-abdefa74f48c" />
 
