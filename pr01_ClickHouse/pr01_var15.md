@@ -11,7 +11,67 @@
 
 ##  Задание 1. Создание базы данных и таблицы продаж
 
+``` sql
+CREATE TABLE sales_var15 (
+    sale_id        UInt64,
+    sale_timestamp DateTime64(3),
+    product_id     UInt32,
+    category       LowCardinality(String),
+    customer_id    UInt64,
+    region         LowCardinality(String),
+    quantity       UInt16,
+    unit_price     Decimal64(2),
+    discount_pct   Float32,
+    is_online      UInt8,
+    ip_address     IPv4
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(sale_timestamp)
+ORDER BY (sale_timestamp, customer_id, product_id);
 
+-- Генерация 150 строк за 3 месяца (Октябрь, Ноябрь, Декабрь 2024)
+-- Параметры для варианта 15:
+-- sale_id: 15001 ... 15150
+-- customer_id: 1500 ... 1599
+-- product_id: 150 ... 169
+-- quantity: 1 ... 20 (max = 20)
+-- unit_price: от 25.00
+-- Категории: Office, Electronics, Clothing, Food, Pets
+
+INSERT INTO sales_var15 
+(sale_id, sale_timestamp, product_id, category, customer_id, region, quantity, unit_price, discount_pct, is_online, ip_address)
+SELECT
+    number + 15001 AS sale_id,
+    toDateTime64('2024-10-01 00:00:00', 3) + INTERVAL (number % 90) DAY + INTERVAL (number % 24) HOUR,
+    150 + (number % 20) AS product_id,
+    CASE (number % 5)
+        WHEN 0 THEN 'Office'
+        WHEN 1 THEN 'Electronics'
+        WHEN 2 THEN 'Clothing'
+        WHEN 3 THEN 'Food'
+        ELSE 'Pets'
+    END AS category,
+    1500 + (number % 100) AS customer_id,
+    CASE (number % 4)
+        WHEN 0 THEN 'North'
+        WHEN 1 THEN 'South'
+        WHEN 2 THEN 'East'
+        ELSE 'West'
+    END AS region,
+    (number % 20) + 1 AS quantity,
+    25.00 + (number % 500) AS unit_price,
+    (number % 100) / 100.0 AS discount_pct,
+    (number % 2) AS is_online,
+    IPv4StringToNum(concat(
+        toString(number % 256), '.', 
+        toString((number + 64) % 256), '.', 
+        toString((number + 128) % 256), '.', 
+        toString(number % 256)
+    )) AS ip_address
+FROM numbers(150);
+
+select * from sales_var15;
+```
 
 <img width="1763" height="736" alt="image" src="https://github.com/user-attachments/assets/312b0c48-af4d-47cc-a8b8-15bd5f08238a" />
 
