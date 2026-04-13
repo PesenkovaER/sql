@@ -126,7 +126,7 @@ WHERE sale_timestamp >= '2024-11-01' AND sale_timestamp < '2024-12-01';
 
 <img width="518" height="139" alt="image" src="https://github.com/user-attachments/assets/c6b179a3-8555-4fa3-982d-9d04e7e80750" />
 
---
+---
 ## Задание 3. ReplacingMergeTree — справочник товаров
 1. Вставьте (NNN % 10 + 5) товаров (для варианта 42: 5 + 2 = 7 товаров) с version = 1.
 2. Для 3 товаров вставьте обновлённые записи с version = 2 (измените base_price и is_available).
@@ -192,30 +192,108 @@ SELECT * FROM products_var15;
 ```
 <img width="1493" height="356" alt="image" src="https://github.com/user-attachments/assets/3e39fbff-b16e-4a78-b609-6afbfa538a98" />
 
+*3.6*
 ```sql
 -- 3.6 Альтернатива OPTIMIZE — используем FINAL
 SELECT * FROM products_var15 FINAL;
 ```
 <img width="1484" height="353" alt="image" src="https://github.com/user-attachments/assets/7dceb21f-d6c7-4a35-948b-b229f5a1b940" />
 
+---
+## Задание 4. SummingMergeTree — агрегация метрик
+1. Вставьте данные за (NNN % 5 + 3) дней для (NNN % 3 + 2) кампаний по 2 канала каждая. campaign_id начинается с NNN * 10 + 1.
+2. Вставьте повторные строки с теми же ключами (metric_date, campaign_id, channel), но с другими значениями метрик.
+3. Выполните OPTIMIZE TABLE daily_metrics_varNNN FINAL.
+4. Убедитесь, что числовые столбцы (impressions, clicks, conversions, spend_cents) просуммировались для строк с одинаковыми ключами.
+5. Напишите запрос: суммарные clicks / impressions (CTR) по каналам.
 
+```sql
+-- Создание таблицы
+CREATE TABLE daily_metrics_var15 (
+    metric_date    Date,
+    campaign_id    UInt32,
+    channel        LowCardinality(String),
+    impressions    UInt64,
+    clicks         UInt64,
+    conversions    UInt32,
+    spend_cents    UInt64
+)
+ENGINE = SummingMergeTree()
+ORDER BY (metric_date, campaign_id, channel);
+
+-- Параметры для варианта 15:
+-- Дней: NNN % 5 + 3 = 15 % 5 + 3 = 3 дня
+-- Кампаний: NNN % 3 + 2 = 15 % 3 + 2 = 2 кампании
+-- campaign_id начинается с: NNN × 10 + 1 = 151
+
+-- 4.1 Вставляем данные за 3 дня для 2 кампаний, по 2 канала каждая (3*2*2 = 12 строк)
+INSERT INTO daily_metrics_var15 (metric_date, campaign_id, channel, impressions, clicks, conversions, spend_cents) VALUES
+('2024-10-01', 151, 'Email', 10000, 500, 50, 500000),
+('2024-10-01', 151, 'Social', 15000, 750, 75, 750000),
+('2024-10-01', 152, 'Email', 8000, 400, 40, 400000),
+('2024-10-01', 152, 'Social', 12000, 600, 60, 600000),
+('2024-10-02', 151, 'Email', 11000, 550, 55, 550000),
+('2024-10-02', 151, 'Social', 16000, 800, 80, 800000),
+('2024-10-02', 152, 'Email', 8500, 425, 42, 425000),
+('2024-10-02', 152, 'Social', 13000, 650, 65, 650000),
+('2024-10-03', 151, 'Email', 12000, 600, 60, 600000),
+('2024-10-03', 151, 'Social', 17000, 850, 85, 850000),
+('2024-10-03', 152, 'Email', 9000, 450, 45, 450000),
+('2024-10-03', 152, 'Social', 14000, 700, 70, 700000);
+```
+
+
+
+```sql
+-- 4.2 Вставляем повторные строки с теми же ключами (для проверки суммирования)
+INSERT INTO daily_metrics_var15 (metric_date, campaign_id, channel, impressions, clicks, conversions, spend_cents) VALUES
+('2024-10-01', 151, 'Email', 1000, 50, 5, 50000),
+('2024-10-01', 151, 'Social', 2000, 100, 10, 100000),
+('2024-10-02', 152, 'Email', 800, 40, 4, 40000),
+('2024-10-03', 151, 'Social', 1500, 75, 7, 75000),
+('2024-10-03', 152, 'Email', 500, 25, 2, 25000),
+('2024-10-03', 152, 'Social', 2000, 100, 10, 100000);
+```
 <img width="1185" height="403" alt="image" src="https://github.com/user-attachments/assets/d463a7c0-23de-49af-8518-abdefa74f48c" />
 
 
 ```sql
-
+-- 4.3 Проверяем данные до оптимизации
+SELECT * FROM daily_metrics_var15;
 ```
-
 <img width="1189" height="590" alt="image" src="https://github.com/user-attachments/assets/b7f01892-1071-4f46-8c2b-41bade08b7f1" />
 
 ```sql
-
+-- 4.4 Выполняем OPTIMIZE для принудительного суммирования
+OPTIMIZE TABLE daily_metrics_var15 FINAL;
+```
+```sql
+-- 4.5 Проверяем, что данные просуммировались (должно быть 3 дня × 2 кампании × 2 канала = 12 строк)
+SELECT 
+    metric_date,
+    campaign_id,
+    channel,
+    impressions,
+    clicks,
+    conversions,
+    spend_cents
+FROM daily_metrics_var15
+ORDER BY metric_date, campaign_id, channel;
 ```
 <img width="1185" height="416" alt="image" src="https://github.com/user-attachments/assets/34a10573-8bd4-4ea9-9b59-189cdfd435fe" />
 
+
+```sql
+-- 4.6 CTR (Click-Through Rate) по каналам
+SELECT
+    channel,
+    SUM(clicks) AS total_clicks,
+    SUM(impressions) AS total_impressions,
+    round(SUM(clicks) / SUM(impressions), 4) AS CTR
+FROM daily_metrics_var15
+GROUP BY channel;
+```
 <img width="707" height="106" alt="image" src="https://github.com/user-attachments/assets/c12e0c92-187a-4075-b131-8a2b5f81195f" />
-
-
 5.2
 ```sql
 
