@@ -254,8 +254,6 @@ INSERT INTO daily_metrics_var15 (metric_date, campaign_id, channel, impressions,
 ('2024-10-03', 152, 'Email', 500, 25, 2, 25000),
 ('2024-10-03', 152, 'Social', 2000, 100, 10, 100000);
 ```
-<img width="1185" height="403" alt="image" src="https://github.com/user-attachments/assets/d463a7c0-23de-49af-8518-abdefa74f48c" />
-
 
 ```sql
 -- 4.3 Проверяем данные до оптимизации
@@ -294,7 +292,10 @@ FROM daily_metrics_var15
 GROUP BY channel;
 ```
 <img width="707" height="106" alt="image" src="https://github.com/user-attachments/assets/c12e0c92-187a-4075-b131-8a2b5f81195f" />
-5.2
+
+---
+
+*5.2*
 ```sql
 
 ```
